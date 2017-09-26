@@ -43,14 +43,44 @@ class Vec4:
 
 class Mat4:
     def __init__(self, *args):
-        self.array=args
+        self.array=(args[0], args[1], args[2], args[3], 
+                args[4], args[5], args[6], args[7],
+                args[8], args[9], args[10], args[11],
+                args[12], args[13], args[14], args[15])
 
     def row(self, n):
         return Vec4(*self.array[n*4:n*4+4])
 
+    def col(self, n):
+        return Vec4(*self.array[n:16:4])
+
+    '''
+    def __eq__(self, rhs):
+        for i in range(16):
+            if(math.abs(self.array[i] - rhs.array[i]) > 1e-4):
+                return False
+        return True
+    '''
+
     def __mul__(self, rhs):
-        return Mat4(self.row0 * self.col0, self.row0 * self.col1, self.row0 * self.col2, self
-            )
+        return Mat4(
+                self.row(0).dot(rhs.col(0)),
+                self.row(0).dot(rhs.col(1)),
+                self.row(0).dot(rhs.col(2)),
+                self.row(0).dot(rhs.col(3)),
+                self.row(1).dot(rhs.col(0)),
+                self.row(1).dot(rhs.col(1)),
+                self.row(1).dot(rhs.col(2)),
+                self.row(1).dot(rhs.col(3)),
+                self.row(2).dot(rhs.col(0)),
+                self.row(2).dot(rhs.col(1)),
+                self.row(2).dot(rhs.col(2)),
+                self.row(2).dot(rhs.col(3)),
+                self.row(3).dot(rhs.col(0)),
+                self.row(3).dot(rhs.col(1)),
+                self.row(3).dot(rhs.col(2)),
+                self.row(3).dot(rhs.col(3))
+                )
 
     def apply(self, v):
         v4=Vec4(v, 1)
