@@ -17,3 +17,8 @@ class TestLAH(unittest.TestCase):
         c = a * b
         self.assertEqual(lah.Mat4.translate(3, 5, 7).array, c.array)
 
+        d=lah.Mat4.translate(4, 5, 6)
+        e=lah.Mat4(d.row(0), d.row(1), d.row(2), d.row(3))
+        self.assertEqual(d.array, e.array)
+        self.assertEqual(d.col(3).array, lah.Vec4(4, 5, 6, 1).array)
+

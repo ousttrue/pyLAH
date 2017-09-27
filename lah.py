@@ -1,8 +1,19 @@
 '''
 Linear Algebra Helper
+
+column major for OpenGL
+
+# ex. row major layout translation matrix
+[1, 0, 0, x, 0, 1, 0, y, 0, 0, 1, z, 0, 0, 0, 1]
+
+# ex. col major layout translation matrix
+[1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]
 '''
 
 import math
+
+
+TO_RADIANS=math.pi/180
 
 
 class Vec3:
@@ -35,24 +46,44 @@ class Vec4:
     @property
     def w(self): return self.array[3]
     @property
-    def vec3(self): return Vec3(*self.array[:3])
+    def vec3(self): 
+        if self.w!=0:
+            return Vec3(self.x/self.w, self.y/self.w, self.z/self.w)
 
     def dot(self, rhs):
-        return self.x * rhs.x + self.y * rhs.y + self.z * rhs.z + self.w * rhs.w
+        return (self.x * rhs.x + 
+                self.y * rhs.y + 
+                self.z * rhs.z + 
+                self.w * rhs.w)
 
 
 class Mat4:
     def __init__(self, *args):
-        self.array=(args[0], args[1], args[2], args[3], 
-                args[4], args[5], args[6], args[7],
-                args[8], args[9], args[10], args[11],
-                args[12], args[13], args[14], args[15])
-
-    def row(self, n):
-        return Vec4(*self.array[n*4:n*4+4])
+        if isinstance(args[0], Vec4):
+            if len(args)!=4:
+                raise ValueError()
+            self.array=(args[0].x, args[1].x, args[2].x, args[3].x,
+                        args[0].y, args[1].y, args[2].y, args[3].y,
+                        args[0].z, args[1].z, args[2].z, args[3].z,
+                        args[0].w, args[1].w, args[2].w, args[3].w
+                        )
+        else:
+            if len(args)!=16:
+                raise ValueError()
+            self.array=(args[0], args[4], args[8], args[12], 
+                args[1], args[5], args[9], args[13],
+                args[2], args[6], args[10], args[14],
+                args[3], args[7], args[11], args[15])
 
     def col(self, n):
+        return Vec4(*self.array[n*4:n*4+4])
+
+    def row(self, n):
         return Vec4(*self.array[n:16:4])
+
+    @property
+    def transposed(self):
+        return Mat4(self.row(0), self.row(1), self.row(2), self.row(3))
 
     '''
     def __eq__(self, rhs):
@@ -120,8 +151,9 @@ class Mat4:
     def rotateZAxisByRadians(angle):
         s=math.sin(angle)
         c=math.cos(angle)
-        return Mat4(c, s, 0, 0,
-                    -s, c, 0, 0,
+        return Mat4(c, -s, 0, 0,
+                    s, c, 0, 0,
                     0, 0, 1, 0,
                     0, 0, 0, 1
                     )
+
