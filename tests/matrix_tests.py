@@ -9,7 +9,7 @@ class TestLAH(unittest.TestCase):
         p=lah.Vec3.zero()
         m=lah.Mat4.translate(1, 2, 3)
         pp=m.apply(p)
-        self.assertAlmostEqual(lah.Vec3(1, 2, 3).array, pp.array)
+        self.assertEqual(lah.Vec3(1, 2, 3).array, pp.array)
 
     def test_matrix(self):
         a=lah.Mat4.translate(1, 2, 3)
@@ -20,5 +20,5 @@ class TestLAH(unittest.TestCase):
         d=lah.Mat4.translate(4, 5, 6)
         e=lah.Mat4(d.row(0), d.row(1), d.row(2), d.row(3))
         self.assertEqual(d.array, e.array)
-        self.assertEqual(d.col(3).array, lah.Vec4(4, 5, 6, 1).array)
+        self.assertEqual(d.row(3).array, lah.Vec4(4, 5, 6, 1).array)
 

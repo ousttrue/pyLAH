@@ -1,13 +1,41 @@
 '''
 Linear Algebra Helper
 
-column major for OpenGL
+This library is row vector style and matrix use row major layout.
+(DirectX style)
 
-# ex. row major layout translation matrix
-[1, 0, 0, x, 0, 1, 0, y, 0, 0, 1, z, 0, 0, 0, 1]
+# mult order
 
-# ex. col major layout translation matrix
-[1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]
+pos = vec4 * Model * View * Projection
+    = vec4 * MVP
+
+# row major layout
+
+| 0  1  2  3|
+| 4  5  6  7|
+| 8  9 10 11|
+|12 13 14 15|
+
+# glsl(col major) 
+
+glUniformMatrix4fv(loc, cnt, False, matrix)
+(transposed)
+
+## col major layout
+
+| 0  4  8 12|
+| 1  5  9 13|
+| 2  6 10 14|
+| 3  7 11 15|
+
+GL_Position = PVM * vPosition;
+
+# glsl(row major)
+
+glUniformMatrix4fv(loc, cnt, True, matrix)
+(not transposed)
+
+GL_Position = vPosition * MVP;
 '''
 
 import math
@@ -80,11 +108,13 @@ class Vec4:
     def __iter__(self):
         return self.array.__iter__()
 
-    def vec3(self, normalize): 
-        if normalize and self.w!=0:
-            return Vec3(self.x/self.w, self.y/self.w, self.z/self.w)
-        else:
-            return Vec3(self.x, self.y, self.z)
+    @property
+    def vec3(self): 
+        return Vec3(self.x, self.y, self.z)
+
+    @property
+    def vec3_w_normalized(self):
+        return Vec3(self.x/self.w, self.y/self.w, self.z/self.w)
 
     def dot(self, rhs):
         return (self.x * rhs.x + 
@@ -111,13 +141,12 @@ class Quaternion:
 
     @property
     def mat3(self):
-        '''
         return Mat3(1-2*self.y*self.y-2*self.z*self.z,
                     2*self.x*self.y-2*self.w*self.z,
                     2*self.x*self.z-2*self.w*self.y,
 
                     2*self.x*self.y+2*self.w*self.z,
-                    1-2*self.x*self.x-2*self.x*self.x,
+                    1-2*self.x*self.x-2*self.z*self.z,
                     2*self.y*self.z-2*self.w*self.x,
 
                     2*self.x*self.z-2*self.w*self.y,
@@ -137,28 +166,28 @@ class Quaternion:
                     2*self.y*self.z-2*self.w*self.x,
                     1-2*self.x*self.x-2*self.y*self.y
                     )
-
+        '''
 
 class Mat3:
     def __init__(self, *args):
         if isinstance(args[0], Vec3):
             if len(args)!=3:
                 raise ValueError('Mat3.__init__ 3')
-            self.array=[args[0].x, args[1].x, args[2].x,
-                        args[0].y, args[1].y, args[2].y,
-                        args[0].z, args[1].z, args[2].z,
+            self.array=[args[0].x, args[0].y, args[0].z,
+                        args[1].x, args[1].y, args[1].z,
+                        args[2].x, args[2].y, args[2].z,
                         ]
         else:
             if len(args)!=9:
                 raise ValueError('Mat3.__init__ 9')
-            self.array=[args[0], args[3], args[6],
-                        args[1], args[4], args[7],
-                        args[2], args[5], args[8]]
-
-    def col(self, n):
-        return Vec3(*self.array[n*3:n*3+3])
+            self.array=[args[0], args[1], args[2],
+                        args[3], args[4], args[5],
+                        args[6], args[7], args[8]]
 
     def row(self, n):
+        return Vec3(*self.array[n*3:n*3+3])
+
+    def col(self, n):
         return Vec3(*self.array[n:9:3])
 
 
@@ -167,32 +196,32 @@ class Mat4:
         if isinstance(args[0], Vec4):
             if len(args)!=4:
                 raise ValueError('Mat4.__init__ 4')
-            self.array=[args[0].x, args[1].x, args[2].x, args[3].x,
-                        args[0].y, args[1].y, args[2].y, args[3].y,
-                        args[0].z, args[1].z, args[2].z, args[3].z,
-                        args[0].w, args[1].w, args[2].w, args[3].w
+            self.array=[args[0].x, args[0].y, args[0].z, args[0].w,
+                        args[1].x, args[1].y, args[1].z, args[1].w,
+                        args[2].x, args[2].y, args[2].z, args[2].w,
+                        args[3].x, args[3].y, args[3].z, args[3].w
                         ]
         else:
             if len(args)!=16:
                 raise ValueError('Mat4.__init__ 16')
-            self.array=[args[0], args[4], args[8], args[12], 
-                args[1], args[5], args[9], args[13],
-                args[2], args[6], args[10], args[14],
-                args[3], args[7], args[11], args[15]]
-
-    def col(self, n):
-        return Vec4(*self.array[n*4:n*4+4])
+            self.array=[args[0], args[1], args[2], args[3], 
+                        args[4], args[5], args[6], args[7],
+                        args[8], args[9], args[10], args[11],
+                        args[12], args[13], args[14], args[15]]
 
     def row(self, n):
+        return Vec4(*self.array[n*4:n*4+4])
+
+    def col(self, n):
         return Vec4(*self.array[n:16:4])
 
     @property
     def lefttop3(self):
-        return Mat3(self.col(0).vec3(False), self.col(1).vec3(False), self.col(2).vec3(False))
+        return Mat3(self.row(0).vec3, self.row(1).vec3, self.row(2))
 
     @property
     def transposed(self):
-        return Mat4(self.row(0), self.row(1), self.row(2), self.row(3))
+        return Mat4(self.col(0), self.col(1), self.col(2), self.col(3))
 
     '''
     def __eq__(self, rhs):
@@ -223,12 +252,23 @@ class Mat4:
                 )
 
     def apply(self, v):
-        v4=Vec4(v, 1)
-        return Vec4(self.row(0).dot(v4), 
-                self.row(1).dot(v4), 
-                self.row(2).dot(v4), 
-                self.row(3).dot(v4)
-                ).vec3
+        if isinstance(v, Vec3):
+            v4=Vec4(v, 1)
+        elif isinstance(v, Vec4):
+            v4=v
+        else:
+            raise ValueError('apply')
+
+        applied=Vec4(v4.dot(self.col(0)), 
+                     v4.dot(self.col(1)), 
+                     v4.dot(self.col(2)), 
+                     v4.dot(self.col(3))
+                     )
+
+        if isinstance(v, Vec3):
+            return applied.vec3
+        else:
+            return applied
 
     @staticmethod
     def identity():
@@ -244,16 +284,16 @@ class Mat4:
         f = 1/tan
         return Mat4(f/aspect, 0, 0, 0,
                     0, f, 0, 0,
-                    0, 0, (zFar + zNear)/(zNear - zFar), 2*zFar*zNear/(zNear - zFar),
-                    0, 0, -1, 0
+                    0, 0, (zFar + zNear)/(zNear - zFar), -1,
+                    0, 0, 2*zFar*zNear/(zNear - zFar), 0
                     )
 
     @staticmethod
     def translate(x, y, z):
-        return Mat4(1, 0, 0, x,
-                0, 1, 0, y,
-                0, 0, 1, z,
-                0, 0, 0, 1
+        return Mat4(1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                x, y, z, 1
                 )
 
     @staticmethod
@@ -301,8 +341,9 @@ class Transform:
     def mat4(self):
         r=self.rot.mat3
         return Mat4(
-            Vec4(r.col(0), self.pos.x),
-            Vec4(r.col(1), self.pos.y),
-            Vec4(r.col(2), self.pos.z),
-            Vec4(0, 0, 0, 1)
+            Vec4(r.row(0), 0),
+            Vec4(r.row(1), 0),
+            Vec4(r.row(2), 0),
+            Vec4(self.pos, 1)
             )
+
