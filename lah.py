@@ -18,7 +18,10 @@ TO_RADIANS=math.pi/180
 
 class Vec3:
     def __init__(self, *args):
-        self.array=(args[0], args[1], args[2])
+        if len(args)!=3:
+            raise ValueError('Vec3.__init__')
+        self.array=[args[0], args[1], args[2]]
+
     @property
     def x(self): return self.array[0]
     @property
@@ -30,13 +33,41 @@ class Vec3:
     def zero():
         return Vec3(0, 0, 0)
 
+    def __sub__(self, rhs):
+        return Vec3(self.x-rhs.x, self.y-rhs.y, self.z-rhs.z)
+
+    def __mul__(self, factor):
+        return Vec3(self.x * factor, self.y * factor, self.z * factor)
+
+    def dot(self, rhs):
+        return self.x*rhs.x + self.y*rhs.y + self.z*rhs.z
+
+    def cross(self, rhs):
+        return Vec3(self.y*rhs.z-self.z*rhs.y,
+                    self.z*rhs.x-self.x*rhs.z,
+                    self.x*rhs.y-self.y*rhs.x)
+
+    def __iter__(self):
+        return self.array.__iter__()
+
+    @property
+    def sqnorm(self): return self.dot(self)
+
+    @property
+    def norm(self): return math.sqrt(self.sqnorm)
+
+    @property
+    def normalized(self): return self * (1/self.norm)
+
 
 class Vec4:
     def __init__(self, *args):
         if isinstance(args[0], Vec3):
-            self.array=(args[0].x, args[0].y, args[0].z, args[1])
+            self.array=[args[0].x, args[0].y, args[0].z, args[1]]
         else:
-            self.array=(args[0], args[1], args[2], args[3])
+            if len(args)!=4:
+                raise ValueError('Vec4.__init__')
+            self.array=[args[0], args[1], args[2], args[3]]
     @property
     def x(self): return self.array[0]
     @property
@@ -45,10 +76,15 @@ class Vec4:
     def z(self): return self.array[2]
     @property
     def w(self): return self.array[3]
-    @property
-    def vec3(self): 
-        if self.w!=0:
+
+    def __iter__(self):
+        return self.array.__iter__()
+
+    def vec3(self, normalize): 
+        if normalize and self.w!=0:
             return Vec3(self.x/self.w, self.y/self.w, self.z/self.w)
+        else:
+            return Vec3(self.x, self.y, self.z)
 
     def dot(self, rhs):
         return (self.x * rhs.x + 
@@ -57,29 +93,102 @@ class Vec4:
                 self.w * rhs.w)
 
 
+class Quaternion:
+    def __init__(self, x, y, z, w):
+        self.array=[x, y, z, w]
+    @property
+    def x(self): return self.array[0]
+    @property
+    def y(self): return self.array[1]
+    @property
+    def z(self): return self.array[2]
+    @property
+    def w(self): return self.array[3]
+
+    @staticmethod
+    def identity():
+        return Quaternion(0, 0, 0, 1)
+
+    @property
+    def mat3(self):
+        '''
+        return Mat3(1-2*self.y*self.y-2*self.z*self.z,
+                    2*self.x*self.y-2*self.w*self.z,
+                    2*self.x*self.z-2*self.w*self.y,
+
+                    2*self.x*self.y+2*self.w*self.z,
+                    1-2*self.x*self.x-2*self.x*self.x,
+                    2*self.y*self.z-2*self.w*self.x,
+
+                    2*self.x*self.z-2*self.w*self.y,
+                    2*self.y*self.z+2*self.w*self.x,
+                    1-2*self.x*self.x-2*self.y*self.y
+            )
+        '''
+        return Mat3(1-2*self.y*self.y-2*self.z*self.z,
+                    2*self.x*self.y+2*self.w*self.z,
+                    2*self.x*self.z-2*self.w*self.y,
+
+                    2*self.x*self.y-2*self.w*self.z,
+                    1-2*self.x*self.x-2*self.z*self.z,
+                    2*self.y*self.z+2*self.w*self.x,
+
+                    2*self.x*self.z-2*self.w*self.y,
+                    2*self.y*self.z-2*self.w*self.x,
+                    1-2*self.x*self.x-2*self.y*self.y
+                    )
+
+
+class Mat3:
+    def __init__(self, *args):
+        if isinstance(args[0], Vec3):
+            if len(args)!=3:
+                raise ValueError('Mat3.__init__ 3')
+            self.array=[args[0].x, args[1].x, args[2].x,
+                        args[0].y, args[1].y, args[2].y,
+                        args[0].z, args[1].z, args[2].z,
+                        ]
+        else:
+            if len(args)!=9:
+                raise ValueError('Mat3.__init__ 9')
+            self.array=[args[0], args[3], args[6],
+                        args[1], args[4], args[7],
+                        args[2], args[5], args[8]]
+
+    def col(self, n):
+        return Vec3(*self.array[n*3:n*3+3])
+
+    def row(self, n):
+        return Vec3(*self.array[n:9:3])
+
+
 class Mat4:
     def __init__(self, *args):
         if isinstance(args[0], Vec4):
             if len(args)!=4:
-                raise ValueError()
-            self.array=(args[0].x, args[1].x, args[2].x, args[3].x,
+                raise ValueError('Mat4.__init__ 4')
+            self.array=[args[0].x, args[1].x, args[2].x, args[3].x,
                         args[0].y, args[1].y, args[2].y, args[3].y,
                         args[0].z, args[1].z, args[2].z, args[3].z,
                         args[0].w, args[1].w, args[2].w, args[3].w
-                        )
+                        ]
         else:
             if len(args)!=16:
-                raise ValueError()
-            self.array=(args[0], args[4], args[8], args[12], 
+                raise ValueError('Mat4.__init__ 16')
+            self.array=[args[0], args[4], args[8], args[12], 
                 args[1], args[5], args[9], args[13],
                 args[2], args[6], args[10], args[14],
-                args[3], args[7], args[11], args[15])
+                args[3], args[7], args[11], args[15]]
 
     def col(self, n):
         return Vec4(*self.array[n*4:n*4+4])
 
     def row(self, n):
         return Vec4(*self.array[n:16:4])
+
+    @property
+    def lefttop3(self):
+        return Mat3(self.col(0).vec3(False), self.col(1).vec3(False), self.col(2).vec3(False))
 
     @property
     def transposed(self):
@@ -148,12 +257,52 @@ class Mat4:
                 )
 
     @staticmethod
-    def rotateZAxisByRadians(angle):
-        s=math.sin(angle)
-        c=math.cos(angle)
+    def rotateXAxisByDegrees(degree):
+        rad=degree * TO_RADIANS
+        s=math.sin(rad)
+        c=math.cos(rad)
+        return Mat4(1, 0, 0, 0,
+                    0, c, -s, 0,
+                    0, s, c, 0,
+                    0, 0, 0, 1
+                    )
+
+    @staticmethod
+    def rotateYAxisByDegrees(degree):
+        rad=degree * TO_RADIANS
+        s=math.sin(rad)
+        c=math.cos(rad)
+        return Mat4(c, 0, s, 0,
+                    0, 1, 0, 0,
+                    -s, 0, c, 0,
+                    0, 0, 0, 1
+                    )
+
+    @staticmethod
+    def rotateZAxisByRadians(rad):
+        s=math.sin(rad)
+        c=math.cos(rad)
         return Mat4(c, -s, 0, 0,
                     s, c, 0, 0,
                     0, 0, 1, 0,
                     0, 0, 0, 1
                     )
 
+class Transform:
+    def __init__(self, pos, rot):
+        self.pos=pos
+        self.rot=rot
+
+    @staticmethod
+    def identity():
+        return Transform(Vec3.zero(), Quaternion.identity())
+
+    @property
+    def mat4(self):
+        r=self.rot.mat3
+        return Mat4(
+            Vec4(r.col(0), self.pos.x),
+            Vec4(r.col(1), self.pos.y),
+            Vec4(r.col(2), self.pos.z),
+            Vec4(0, 0, 0, 1)
+            )
