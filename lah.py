@@ -39,75 +39,69 @@ GL_Position = vPosition * MVP;
 '''
 
 import math
+from typing import NamedTuple
+import unittest
 
 TO_RADIANS = math.pi / 180
 
 
-class Vec3:
-    def __init__(self, *args):
-        if len(args) != 3:
-            raise ValueError('Vec3.__init__')
-        self.array = [args[0], args[1], args[2]]
+class Float3(NamedTuple):
+    x: float = 0
+    y: float = 0
+    z: float = 0
 
-    @property
-    def x(self): return self.array[0]
 
-    @property
-    def y(self): return self.array[1]
+class Float4(NamedTuple):
+    x: float
+    y: float
+    z: float
+    w: float
 
-    @property
-    def z(self): return self.array[2]
 
-    def __iter__(self):
-        return self.array.__iter__()
-
+class Vec3(Float3):
     @staticmethod
-    def zero():
+    def zero()->'Vec3':
         return Vec3(0, 0, 0)
 
-    def __sub__(self, rhs):
-        return Vec3(self.x-rhs.x, self.y-rhs.y, self.z-rhs.z)
+    @staticmethod
+    def one()->'Vec3':
+        return Vec3(1, 1, 1)
 
-    def __mul__(self, factor):
+    def __add__(self, rhs)->'Vec3':
+        return Vec3(self.x + rhs.x, self.y + rhs.y, self.z + rhs.z)
+
+    def __sub__(self, rhs: 'Vec3')->'Vec3':
+        return Vec3(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
+
+    def __mul__(self, factor: float)->'Vec3':
         return Vec3(self.x * factor, self.y * factor, self.z * factor)
 
-    def dot(self, rhs):
+    def dot(self, rhs)->float:
         return self.x*rhs.x + self.y*rhs.y + self.z*rhs.z
 
-    def cross(self, rhs):
+    def cross(self, rhs)->'Vec3':
         return Vec3(self.y*rhs.z-self.z*rhs.y,
                     self.z*rhs.x-self.x*rhs.z,
                     self.x*rhs.y-self.y*rhs.x)
 
     @property
-    def sqnorm(self): return self.dot(self)
+    def sqnorm(self)->float: return self.dot(self)
 
     @property
-    def norm(self): return math.sqrt(self.sqnorm)
+    def norm(self)->float: return math.sqrt(self.sqnorm)
 
     @property
     def normalized(self): return self * (1/self.norm)
 
 
-class Vec4:
-    def __init__(self, *args):
-        if isinstance(args[0], Vec3):
-            self.array = [args[0].x, args[0].y, args[0].z, args[1]]
-        else:
-            if len(args) != 4:
-                raise ValueError('Vec4.__init__')
-            self.array = [args[0], args[1], args[2], args[3]]
-    @property
-    def x(self): return self.array[0]
-    @property
-    def y(self): return self.array[1]
-    @property
-    def z(self): return self.array[2]
-    @property
-    def w(self): return self.array[3]
+class Vec4(Float4):
+    @staticmethod
+    def zero()->'Vec4':
+        return Vec4(0, 0, 0, 0)
 
-    def __iter__(self):
-        return self.array.__iter__()
+    @staticmethod
+    def one()->'Vec4':
+        return Vec4(1, 1, 1, 1)
 
     @property
     def vec3(self):
@@ -117,25 +111,20 @@ class Vec4:
     def vec3_w_normalized(self):
         return Vec3(self.x/self.w, self.y/self.w, self.z/self.w)
 
-    def dot(self, rhs):
+    def __add__(self, rhs)->'Vec4':
+        return Vec4(self.x + rhs.x, self.y + rhs.y, self.z + rhs.z, self.w + rhs.w)
+
+    def __sub__(self, rhs: 'Vec4')->'Vec4':
+        return Vec4(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z, self.w - rhs.w)
+
+    def dot(self, rhs)->float:
         return (self.x * rhs.x +
                 self.y * rhs.y +
                 self.z * rhs.z +
                 self.w * rhs.w)
 
 
-class Quaternion:
-    def __init__(self, x, y, z, w):
-        self.array = [x, y, z, w]
-    @property
-    def x(self): return self.array[0]
-    @property
-    def y(self): return self.array[1]
-    @property
-    def z(self): return self.array[2]
-    @property
-    def w(self): return self.array[3]
-
+class Quaternion(Float4):
     @staticmethod
     def identity():
         return Quaternion(0, 0, 0, 1)
@@ -250,7 +239,7 @@ class Mat4:
 
     def apply(self, v):
         if isinstance(v, Vec3):
-            v4 = Vec4(v, 1)
+            v4 = Vec4(v.x, v.y, v.z, 1)
         elif isinstance(v, Vec4):
             v4 = v
         else:
@@ -336,3 +325,53 @@ class Transform:
             Vec4(r.row(1), 0),
             Vec4(r.row(2), 0),
             Vec4(self.pos, 1))
+
+
+##############################################################################
+# TestCases
+##############################################################################
+class Vec3TestCase(unittest.TestCase):
+    def test_vec3(self):
+        self.assertEqual(Vec3(0, 0, 0), Vec3())
+        self.assertEqual(Vec3(0, 0, 0), Vec3.zero())
+        self.assertEqual((0, 0, 0), Vec3.zero())
+        self.assertEqual(Vec3(1, 1, 1), Vec3.one())
+        self.assertEqual(Vec3(2, 2, 2), Vec3.one() + Vec3.one())
+
+
+class Vec4TestCase(unittest.TestCase):
+    def test_vec4(self):
+        self.assertEqual(Vec4(0, 0, 0, 0), Vec4.zero())
+        self.assertEqual((0, 0, 0, 0), Vec4.zero())
+        self.assertEqual(Vec4(1, 1, 1, 1), Vec4.one())
+        self.assertEqual(Vec4(2, 2, 2, 2), Vec4.one() + Vec4.one())
+
+
+class QuaternionTestCase(unittest.TestCase):
+    def test_quaternion4(self):
+        self.assertEqual(Quaternion(0, 0, 0, 1), Quaternion.identity())
+        #self.assertEqual(Quaternion(0, 0, 0, 1), Quaternion.identity() * Quaternion.identity())
+
+
+class Mat4TestCase(unittest.TestCase):
+
+    def test_translate(self):
+        p = Vec3.zero()
+        m = Mat4.translate(1, 2, 3)
+        pp = m.apply(p)
+        self.assertEqual(Vec3(1, 2, 3), pp)
+
+    def test_matrix(self):
+        a = Mat4.translate(1, 2, 3)
+        b = Mat4.translate(2, 3, 4)
+        c = a * b
+        self.assertEqual(Mat4.translate(3, 5, 7).array, c.array)
+
+        d = Mat4.translate(4, 5, 6)
+        e = Mat4(d.row(0), d.row(1), d.row(2), d.row(3))
+        self.assertEqual(d.array, e.array)
+        self.assertEqual(d.row(3), Vec4(4, 5, 6, 1))
+
+
+if __name__ == '__main__':
+    unittest.main()
