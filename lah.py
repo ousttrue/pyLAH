@@ -42,8 +42,6 @@ import math
 from typing import NamedTuple
 import unittest
 
-TO_RADIANS = math.pi / 180
-
 
 class Float3(NamedTuple):
     x: float = 0
@@ -214,13 +212,31 @@ class Mat3(Float9):
                     0, 0, 1)
 
     @staticmethod
-    def rotation_y_axis(degree: float)->'Mat3':
+    def rotation_x_axis_by_degree(degree: float)->'Mat3':
         rad = math.radians(degree)
-        c = math.cos(rad)
         s = math.sin(rad)
+        c = math.cos(rad)
+        return Mat3(1, 0, 0,
+                    0, c, s,
+                    0, -s, c)
+
+    @staticmethod
+    def rotation_y_axis_by_degree(degree: float)->'Mat3':
+        rad = math.radians(degree)
+        s = math.sin(rad)
+        c = math.cos(rad)
         return Mat3(c, 0, -s,
                     0, 1, 0,
                     s, 0, c)
+
+    @staticmethod
+    def rotation_z_axis_by_degree(degree: float)->'Mat3':
+        rad = math.radians(degree)
+        s = math.sin(rad)
+        c = math.cos(rad)
+        return Mat3(c, s, 0,
+                    -s, c, 0,
+                    0, 0, 1)
 
     def row(self, n)->Vec3:
         i = n * 3
@@ -308,7 +324,7 @@ class Mat4(Float16):
 
     @staticmethod
     def perspective(fovy, aspect, zNear, zFar):
-        tan = math.atan(fovy * TO_RADIANS / 2)
+        tan = math.atan(math.radians(fovy / 2))
         f = 1 / tan
         return Mat4(f / aspect, 0, 0, 0,
                     0, f, 0, 0,
@@ -321,35 +337,6 @@ class Mat4(Float16):
                     0, 1, 0, 0,
                     0, 0, 1, 0,
                     x, y, z, 1)
-
-    @staticmethod
-    def rotateXAxisByDegrees(degree):
-        rad = degree * TO_RADIANS
-        s = math.sin(rad)
-        c = math.cos(rad)
-        return Mat4(1, 0, 0, 0,
-                    0, c, s, 0,
-                    0, -s, c, 0,
-                    0, 0, 0, 1)
-
-    @staticmethod
-    def rotateYAxisByDegrees(degree):
-        rad = degree * TO_RADIANS
-        s = math.sin(rad)
-        c = math.cos(rad)
-        return Mat4(c, 0, -s, 0,
-                    0, 1, 0, 0,
-                    s, 0, c, 0,
-                    0, 0, 0, 1)
-
-    @staticmethod
-    def rotateZAxisByRadians(rad):
-        s = math.sin(rad)
-        c = math.cos(rad)
-        return Mat4(c, s, 0, 0,
-                    -s, c, 0, 0,
-                    0, 0, 1, 0,
-                    0, 0, 0, 1)
 
 
 class _Transform(NamedTuple):
@@ -427,7 +414,7 @@ class Mat4TestCase(unittest.TestCase):
 class TransformTestCase(unittest.TestCase):
 
     def test_transform(self):
-        a = Transform(Vec3(1, 2, 3), Quaternion.from_mat3(Mat3.rotation_y_axis(90)))
+        a = Transform(Vec3(1, 2, 3), Quaternion.from_mat3(Mat3.rotation_y_axis_by_degree(90)))
         b = a * a
         self.assertEqual(Vec3(4, 4, 4), b.pos)
 
